@@ -6,20 +6,29 @@ import (
 	"golang.org/x/tour/tree"
 )
 
+/* questions:
+1. so normally sender close the chan?
+2. should we always give the direction of the chan?
+3.
+*/
+
 // Walk walks the tree t sending all values
 // from the tree to the channel ch.
 func Walk(t *tree.Tree, ch chan int) {
-	var walk func(t *tree.Tree, ch chan int)
-	walk = func(t *tree.Tree, ch chan int) {
-		if t.Left != nil {
-			walk(t.Left, ch)
+	// defer or nor defer
+	defer close(ch)
+	var walk func(t *tree.Tree)
+	// here is a closure for ch
+	// we can use walk func(t *tree.Tree, ch) also
+	walk = func(t *tree.Tree) {
+		if t == nil {
+			return
 		}
+		walk(t.Left)
 		ch <- t.Value
-		if t.Right != nil {
-			walk(t.Right, ch)
-		}
+		walk(t.Right)
 	}
-	close(ch)
+	walk(t)
 }
 
 // Same determines whether the trees
@@ -30,7 +39,8 @@ func Same(t1, t2 *tree.Tree) bool {
 	go Walk(t1, ch1)
 	go Walk(t2, ch2)
 	for v := range ch1 {
-		if v != <-ch2 {
+		v2 := <-ch2
+		if v != v2 {
 			return false
 		}
 	}
