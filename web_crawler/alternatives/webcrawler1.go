@@ -20,9 +20,10 @@ func Crawl(url string, depth int, fetcher Fetcher, cache *cache, wg *sync.WaitGr
 		return
 	}
 
-	if !cache.trySet(url) {
+	if exists := cache.get(url); exists {
 		return
 	}
+	cache.set(url)
 
 	body, urls, err := fetcher.Fetch(url)
 	if err != nil {
@@ -73,28 +74,17 @@ func newCache() *cache {
 	}
 }
 
-// func (c *cache) get(k string) bool {
-// 	c.mu.RLock()
-// 	defer c.mu.RUnlock()
-// 	_, exists := c.visited[k]
-// 	return exists
-// }
+func (c *cache) get(k string) bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	_, exists := c.visited[k]
+	return exists
+}
 
-// func (c *cache) set(k string) {
-// 	c.mu.Lock()
-// 	defer c.mu.Unlock()
-// 	c.visited[k] = struct{}{}
-// }
-
-func (c *cache) trySet(k string) bool {
+func (c *cache) set(k string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	_, exists := c.visited[k]
-	if exists {
-		return false
-	}
 	c.visited[k] = struct{}{}
-	return true
 }
 
 // fetcher is a populated fakeFetcher.
